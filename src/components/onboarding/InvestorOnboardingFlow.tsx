@@ -1086,11 +1086,11 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
             APPLICATION SUBMITTED SUCCESSFULLY
           </h3>
           <p className="text-gray-700 mb-6 font-medium uppercase tracking-wide">
-            Your account creation request has been submitted for Governor review.
+            Your account creation request has been submitted for review.
           </p>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <p className="text-gray-800 text-sm font-medium uppercase tracking-wide">
-              <strong>NEXT STEPS:</strong> OUR GOVERNOR TEAM WILL REVIEW YOUR APPLICATION AND UPLOADED DOCUMENTS. 
+              <strong>NEXT STEPS:</strong> OUR MANAGEMENT TEAM WILL REVIEW YOUR APPLICATION AND UPLOADED DOCUMENTS. 
               YOU WILL RECEIVE A NOTIFICATION ONCE YOUR ACCOUNT IS APPROVED OR IF ADDITIONAL INFORMATION IS REQUIRED.
             </p>
           </div>

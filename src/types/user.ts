@@ -186,14 +186,14 @@ export interface AccountCreationRequest {
     fileName: string;
     fileType: string;
     fileSize: number;
-    base64Data: string;
+    url: string; // Changed from base64Data
     uploadedAt: Date;
   };
   proofOfDeposit: {
     fileName: string;
     fileType: string;
     fileSize: number;
-    base64Data: string;
+    url: string; // Changed from base64Data
     uploadedAt: Date;
   };
   agreementAccepted: boolean;

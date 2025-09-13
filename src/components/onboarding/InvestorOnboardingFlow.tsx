@@ -1,74 +1,87 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Modal from '../common/Modal';
 import Button from '../common/Button';
-import { useAuth } from '../../contexts/AuthContext';
 import { FirestoreService } from '../../services/firestoreService';
-import { AccountCreationRequest } from '../../types/user';
-import { User, Mail, Phone, MapPin, Building, CreditCard, FileText, Upload, CheckCircle, ArrowRight, ArrowLeft, AlertTriangle, Eye, Download, Shield, Globe, DollarSign, X, Camera, Car as IdCard, Scroll, Check } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { 
+  User, 
+  Mail, 
+  Phone, 
+  MapPin, 
+  DollarSign,
+  Building,
+  CreditCard,
+  Upload,
+  FileText,
+  CheckCircle,
+  AlertTriangle,
+  Eye,
+  Download,
+  X,
+  Shield,
+  Calendar,
+  Globe,
+  Lock,
+  Camera,
+  Image as ImageIcon
+} from 'lucide-react';
 
-// Comprehensive country list
-const countries = [
-  'Afghanistan', 'Albania', 'Algeria', 'Andorra', 'Angola', 'Argentina', 'Armenia', 'Australia', 'Austria', 'Azerbaijan',
-  'Bahamas', 'Bahrain', 'Bangladesh', 'Barbados', 'Belarus', 'Belgium', 'Belize', 'Benin', 'Bhutan', 'Bolivia',
-  'Bosnia and Herzegovina', 'Botswana', 'Brazil', 'Brunei', 'Bulgaria', 'Burkina Faso', 'Burundi', 'Cambodia', 'Cameroon', 'Canada',
-  'Cape Verde', 'Central African Republic', 'Chad', 'Chile', 'China', 'Colombia', 'Comoros', 'Congo', 'Costa Rica', 'Croatia',
-  'Cuba', 'Cyprus', 'Czech Republic', 'Denmark', 'Djibouti', 'Dominica', 'Dominican Republic', 'Ecuador', 'Egypt', 'El Salvador',
-  'Equatorial Guinea', 'Eritrea', 'Estonia', 'Ethiopia', 'Fiji', 'Finland', 'France', 'Gabon', 'Gambia', 'Georgia',
-  'Germany', 'Ghana', 'Greece', 'Grenada', 'Guatemala', 'Guinea', 'Guinea-Bissau', 'Guyana', 'Haiti', 'Honduras',
-  'Hungary', 'Iceland', 'India', 'Indonesia', 'Iran', 'Iraq', 'Ireland', 'Israel', 'Italy', 'Jamaica',
-  'Japan', 'Jordan', 'Kazakhstan', 'Kenya', 'Kiribati', 'Kuwait', 'Kyrgyzstan', 'Laos', 'Latvia', 'Lebanon',
-  'Lesotho', 'Liberia', 'Libya', 'Liechtenstein', 'Lithuania', 'Luxembourg', 'Madagascar', 'Malawi', 'Malaysia', 'Maldives',
-  'Mali', 'Malta', 'Marshall Islands', 'Mauritania', 'Mauritius', 'Mexico', 'Micronesia', 'Moldova', 'Monaco', 'Mongolia',
-  'Montenegro', 'Morocco', 'Mozambique', 'Myanmar', 'Namibia', 'Nauru', 'Nepal', 'Netherlands', 'New Zealand', 'Nicaragua',
-  'Niger', 'Nigeria', 'North Korea', 'North Macedonia', 'Norway', 'Oman', 'Pakistan', 'Palau', 'Panama', 'Papua New Guinea',
-  'Paraguay', 'Peru', 'Philippines', 'Poland', 'Portugal', 'Qatar', 'Romania', 'Russia', 'Rwanda', 'Saint Kitts and Nevis',
-  'Saint Lucia', 'Saint Vincent and the Grenadines', 'Samoa', 'San Marino', 'Sao Tome and Principe', 'Saudi Arabia', 'Senegal', 'Serbia', 'Seychelles', 'Sierra Leone',
-  'Singapore', 'Slovakia', 'Slovenia', 'Solomon Islands', 'Somalia', 'South Africa', 'South Korea', 'South Sudan', 'Spain', 'Sri Lanka',
-  'Sudan', 'Suriname', 'Sweden', 'Switzerland', 'Syria', 'Taiwan', 'Tajikistan', 'Tanzania', 'Thailand', 'Timor-Leste',
-  'Togo', 'Tonga', 'Trinidad and Tobago', 'Tunisia', 'Turkey', 'Turkmenistan', 'Tuvalu', 'Uganda', 'Ukraine', 'United Arab Emirates',
-  'United Kingdom', 'United States', 'Uruguay', 'Uzbekistan', 'Vanuatu', 'Vatican City', 'Venezuela', 'Vietnam', 'Yemen', 'Zambia', 'Zimbabwe'
-];
+interface InvestorOnboardingFlowProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
 
-// Country-specific banking requirements
-const bankingRequirements: Record<string, any> = {
-  'Argentina': {
-    fields: [
-      { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
-      { name: 'cbu', label: 'CBU (Clave Bancaria Uniforme)', type: 'text', required: true, maxLength: 22, pattern: /^\d{22}$/ },
-      { name: 'alias', label: 'ALIAS', type: 'text', required: true, maxLength: 20 },
-      { name: 'swiftCode', label: 'SWIFT Code', type: 'text', required: true, maxLength: 11 },
-      { name: 'bankName', label: 'Bank Name', type: 'text', required: true }
-    ],
-    currency: 'ARS'
-  },
+interface UploadedDocument {
+  type: 'id_card' | 'passport' | 'proof_of_deposit';
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  url: string; // Changed from base64Data
+  uploadedAt: Date;
+}
+
+// Enhanced bank data for the 5 specified countries
+const banksByCountry: Record<string, string[]> = {
+  'Mexico': [
+    'Santander México', 'Banorte', 'BBVA México', 'Banamex (Citibanamex)', 'HSBC México',
+    'Scotiabank México', 'Banco Azteca', 'Inbursa', 'Banco del Bajío', 'Banregio'
+  ],
+  'France': [
+    'BNP Paribas', 'Crédit Agricole', 'Société Générale', 'Crédit Mutuel', 'BPCE (Banque Populaire)',
+    'La Banque Postale', 'Crédit du Nord', 'HSBC France', 'ING Direct France', 'Boursorama Banque'
+  ],
+  'Switzerland': [
+    'UBS', 'Credit Suisse', 'Julius Baer', 'Pictet', 'Lombard Odier',
+    'Banque Cantonale Vaudois', 'Zürcher Kantonalbank', 'PostFinance', 'Raiffeisen Switzerland', 'Migros Bank'
+  ],
+  'Saudi Arabia': [
+    'Saudi National Bank (SNB)', 'Al Rajhi Bank', 'Riyad Bank', 'Banque Saudi Fransi', 'Saudi British Bank (SABB)',
+    'Arab National Bank', 'Bank AlJazira', 'Alinma Bank', 'Bank Albilad', 'Saudi Investment Bank'
+  ],
+  'United Arab Emirates': [
+    'Emirates NBD', 'First Abu Dhabi Bank (FAB)', 'Abu Dhabi Commercial Bank (ADCB)', 'Dubai Islamic Bank', 'Mashreq Bank',
+    'Commercial Bank of Dubai', 'Union National Bank', 'Ajman Bank', 'Bank of Sharjah', 'Fujairah National Bank'
+  ]
+};
+
+// Bank form fields for each country
+const bankFormFields: Record<string, any> = {
   'Mexico': {
     fields: [
       { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
-      { name: 'clabe', label: 'CUENTA CLABE', type: 'text', required: true, maxLength: 18, pattern: /^\d{18}$/ },
-      { name: 'swiftCode', label: 'SWIFT Code', type: 'text', required: true, maxLength: 11 },
-      { name: 'bankName', label: 'Bank Name', type: 'text', required: true },
-      { name: 'bankBranch', label: 'Bank Branch', type: 'text', required: false }
-    ],
-    currency: 'MXN'
-  },
-  'United Arab Emirates': {
-    fields: [
-      { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
-      { name: 'iban', label: 'IBAN', type: 'text', required: true, maxLength: 23 },
-      { name: 'swiftCode', label: 'SWIFT Code', type: 'text', required: true, maxLength: 11 },
-      { name: 'bankName', label: 'Bank Name', type: 'text', required: true },
-      { name: 'emiratesId', label: 'Emirates ID', type: 'text', required: true },
+      { name: 'clabe', label: 'CLABE (18 digits)', type: 'text', required: true, maxLength: 18 },
+      { name: 'bankBranch', label: 'Bank Branch', type: 'text', required: false },
       { name: 'phoneNumber', label: 'Phone Number', type: 'tel', required: true }
     ],
-    currency: 'AED'
+    currency: 'MXN'
   },
   'France': {
     fields: [
       { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
       { name: 'iban', label: 'IBAN', type: 'text', required: true, maxLength: 34 },
       { name: 'bic', label: 'BIC/SWIFT Code', type: 'text', required: true, maxLength: 11 },
-      { name: 'bankName', label: 'Bank Name', type: 'text', required: true },
       { name: 'address', label: 'Address', type: 'text', required: true }
     ],
     currency: 'EUR'
@@ -78,7 +91,6 @@ const bankingRequirements: Record<string, any> = {
       { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
       { name: 'iban', label: 'IBAN', type: 'text', required: true, maxLength: 21 },
       { name: 'bic', label: 'BIC/SWIFT Code', type: 'text', required: true, maxLength: 11 },
-      { name: 'bankName', label: 'Bank Name', type: 'text', required: true },
       { name: 'address', label: 'Address', type: 'text', required: true }
     ],
     currency: 'CHF'
@@ -88,411 +100,272 @@ const bankingRequirements: Record<string, any> = {
       { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
       { name: 'iban', label: 'IBAN', type: 'text', required: true, maxLength: 24 },
       { name: 'swiftCode', label: 'SWIFT Code', type: 'text', required: true, maxLength: 11 },
-      { name: 'bankName', label: 'Bank Name', type: 'text', required: true },
       { name: 'phoneNumber', label: 'Phone Number', type: 'tel', required: true }
     ],
     currency: 'SAR'
+  },
+  'United Arab Emirates': {
+    fields: [
+      { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
+      { name: 'iban', label: 'IBAN', type: 'text', required: true, maxLength: 23 },
+      { name: 'swiftCode', label: 'SWIFT Code', type: 'text', required: true, maxLength: 11 },
+      { name: 'emiratesId', label: 'Emirates ID', type: 'text', required: true },
+      { name: 'phoneNumber', label: 'Phone Number', type: 'tel', required: true }
+    ],
+    currency: 'AED'
   }
 };
-
-// ADCB Bank Account Details (ending in 001)
-const adcbBankDetails = {
-  accountHolderName: 'Cristian Rolando Dorao',
-  bankName: 'Abu Dhabi Commercial Bank (ADCB)',
-  bankAddress: 'ADCB Building, Al Nasr Street, Abu Dhabi, United Arab Emirates',
-  accountNumber: '13567890123456001',
-  iban: 'AE680030013567890123456001',
-  swiftCode: 'ADCBAEAAXXX',
-  routingCode: 'ADCB030',
-  branchCode: '001',
-  currency: 'AED',
-  country: 'United Arab Emirates',
-  additionalInstructions: 'For international transfers, please include the full IBAN and SWIFT code. Reference: Interactive Brokers Investment Account'
-};
-
-interface InvestorOnboardingFlowProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess?: () => void;
-}
 
 const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardingFlowProps) => {
   const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    country: '',
-    city: '',
-    initialDeposit: '',
-    accountType: 'Standard' as 'Standard' | 'Pro',
-    bankDetails: {} as Record<string, string>
-  });
-  
-  const [identityDocument, setIdentityDocument] = useState<{
-    type: 'id_card' | 'passport';
-    file: File | null;
-    base64Data: string;
-  }>({
-    type: 'id_card',
-    file: null,
-    base64Data: ''
-  });
-  
-  const [proofOfDeposit, setProofOfDeposit] = useState<{
-    file: File | null;
-    base64Data: string;
-  }>({
-    file: null,
-    base64Data: ''
-  });
-  
-  const [agreementScrolled, setAgreementScrolled] = useState(false);
-  const [agreementAccepted, setAgreementAccepted] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
-  
-  const agreementRef = useRef<HTMLDivElement>(null);
-  const totalSteps = 6;
 
-  // Convert file to base64
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
+  // Form data state
+  const [personalData, setPersonalData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    country: 'Mexico',
+    city: ''
+  });
 
-  // Handle identity document upload
-  const handleIdentityUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const [financialData, setFinancialData] = useState({
+    initialDeposit: '',
+    accountType: 'Standard' as 'Standard' | 'Pro'
+  });
+
+  const [bankData, setBankData] = useState({
+    selectedBank: '',
+    formData: {} as Record<string, string>
+  });
+
+  const [verificationData, setVerificationData] = useState({
+    idType: 'id_card' as 'id_card' | 'passport',
+    depositMethod: 'bank_transfer' as 'bank_transfer' | 'crypto' | 'credit_card',
+    selectedCrypto: 'BTC' as 'BTC' | 'ETH' | 'USDT'
+  });
+
+  const [uploadedDocuments, setUploadedDocuments] = useState<UploadedDocument[]>([]);
+  const [agreementAccepted, setAgreementAccepted] = useState(false);
+
+  // File input refs
+  const identityFileRef = useRef<HTMLInputElement>(null);
+  const depositFileRef = useRef<HTMLInputElement>(null);
+
+  const steps = [
+    { id: 1, title: 'Personal Information', icon: <User size={20} /> },
+    { id: 2, title: 'Financial Details', icon: <DollarSign size={20} /> },
+    { id: 3, title: 'Banking Information', icon: <Building size={20} /> },
+    { id: 4, title: 'Identity Verification', icon: <Shield size={20} /> },
+    { id: 5, title: 'Agreement & Submission', icon: <FileText size={20} /> }
+  ];
+
+  // Get available banks and form fields for selected country
+  const availableBanks = banksByCountry[personalData.country] || [];
+  const countryBankFields = bankFormFields[personalData.country];
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>, 
+    documentType: 'identity' | 'proof_of_deposit'
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // Validate file
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
-      setError('Please upload only JPG, PNG, or PDF files');
-      return;
-    }
-
     if (file.size > 10 * 1024 * 1024) {
       setError('File size must be less than 10MB');
       return;
     }
 
-    setIsUploading(true);
-    setError('');
-
-    try {
-      const base64Data = await convertToBase64(file);
-      setIdentityDocument({
-        type: identityDocument.type,
-        file,
-        base64Data
-      });
-    } catch (error) {
-      console.error('Error converting file:', error);
-      setError('Failed to process file. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  // Handle proof of deposit upload
-  const handleProofOfDepositUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validate file
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
-    if (!validTypes.includes(file.type)) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowedTypes.includes(file.type)) {
       setError('Please upload only JPG, PNG, or PDF files');
       return;
     }
 
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be less than 10MB');
-      return;
-    }
-
-    setIsUploading(true);
-    setError('');
-
     try {
-      const base64Data = await convertToBase64(file);
-      setProofOfDeposit({
-        file,
-        base64Data
+      // Convert file to Base64 (Data URL)
+      const fileUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
+
+      console.log('📄 File converted to Data URL:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        urlLength: fileUrl.length, // Log the length of the Data URL
+        documentType
+      });
+
+      const documentData: UploadedDocument = {
+        type: documentType === 'identity' ? verificationData.idType : 'proof_of_deposit',
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+        url: fileUrl, // Store the Data URL in the 'url' field
+        uploadedAt: new Date()
+      };
+
+      // Remove existing document of same type and add new one
+      setUploadedDocuments(prev => {
+        const filtered = prev.filter(doc => {
+          if (documentType === 'identity') {
+            return doc.type !== 'id_card' && doc.type !== 'passport';
+          } else {
+            return doc.type !== 'proof_of_deposit';
+          }
+        });
+        return [...filtered, documentData];
+      });
+
+      setError('');
+      console.log('✅ Document uploaded successfully:', documentData.fileName);
     } catch (error) {
-      console.error('Error converting file:', error);
-      setError('Failed to process file. Please try again.');
-    } finally {
-      setIsUploading(false);
+      console.error('Error uploading file:', error);
+      setError('Failed to upload file. Please try again.');
     }
   };
 
-  // Handle agreement scroll detection
-  const handleAgreementScroll = () => {
-    if (agreementRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = agreementRef.current;
-      const scrolledToBottom = scrollTop + clientHeight >= scrollHeight - 10; // 10px tolerance
-      setAgreementScrolled(scrolledToBottom);
-    }
-  };
-
-  // Generate agreement content with investor data
-  const generateAgreementContent = () => {
-    const currentDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    return `
-INVESTMENT AND OPERATION AGREEMENT
-
-This Investment and Operation Agreement ("Agreement") is entered into on the date of signature by and between:
-
-TRADER INFORMATION:
-Trader: Cristian Rolando Dorao, residing at Le Park II, Villa No. 9, Jumeirah Village Circle, Dubai, hereinafter referred to as the "Trader".
-
-INVESTOR INFORMATION:
-Name: ${formData.fullName}
-Email: ${formData.email}
-Phone: ${formData.phone}
-Country: ${formData.country}
-City: ${formData.city}
-Account Type: ${formData.accountType}
-Initial Deposit: $${parseFloat(formData.initialDeposit || '0').toLocaleString()} USD
-
-CONSIDERATIONS
-
-The Trader operates a portfolio using the capital provided by the Investor to trade in the Forex and cryptocurrency markets.
-The Trader uses InteractiveBrokers, a highly regulated trading platform, to execute trades.
-The Investor agrees to provide the funds and comply with the terms and conditions set forth in this document.
-By virtue of the following clauses and mutual agreements, the parties agree as follows:
-
-1. DEFINITIONS
-
-1.1 Minimum Investment: USD 1,000 or its equivalent in local currency.
-1.2 Trading Instruments:
-    • Forex: Gold/USD (XAUUSD) and major currency pairs.
-    • Cryptocurrencies: Bitcoin (BTC), Ethereum (ETH), and other major cryptocurrencies.
-1.3 Trading Strategy: The Trader employs fundamental analysis, trend analysis, and liquidity swaps to identify trading opportunities.
-
-2. INVESTMENT PERIOD
-
-2.1 Cryptocurrency Trading: Operated for 30 calendar days.
-2.2 Forex Trading: Operated for 20 business days.
-2.3 The Investor may request withdrawals in accordance with Section 5.
-
-3. OBLIGATIONS OF THE INVESTOR
-
-3.1 The Investor must provide valid documentation and undergo thorough verification to comply with anti-fraud and anti-money laundering regulations.
-3.2 The Investor agrees to transfer a minimum of USD 1,000 or its equivalent to the Trader's account for trading purposes.
-3.3 The Trader guarantees that the initial investment amount will remain safe during the term of the contract. If the Trader, by error or misconduct, executes orders without due caution or proper analysis resulting in losses, the Investor shall have the right to revoke the contract. In the event of revocation, the Trader must return the full initial investment amount to the Investor without deduction of losses.
-
-4. TRADER'S COMPENSATION
-
-4.1 The Trader is entitled to 15% of the net profits generated through trading, as regulated by InteractiveBrokers.
-4.2 No additional fees or charges shall be applied to the Investor by the Trader.
-4.3 Any request by the Trader for an additional percentage must be documented and immediately reported to InteractiveBrokers support.
-
-5. WITHDRAWALS
-
-5.1 Monthly Withdrawals: The Investor may withdraw profits monthly while maintaining the minimum deposit of USD 1,000.
-5.2 Full Balance Withdrawal:
-    • The Investor must follow the account closure process, which may take up to 60 calendar days.
-    • After account closure, the Investor may not open a new account for 90 days.
-5.3 Withdrawals must be made to a bank account matching the name and address provided at registration.
-5.4 Any change in citizenship or address of the Investor must be immediately reported to the Trader and to InteractiveBrokers.
-
-6. TERM AND TERMINATION
-
-6.1 This Agreement has no fixed term and shall remain in effect until terminated by mutual agreement or as follows:
-    • By the Investor: Through written notice and completion of the withdrawal process.
-    • By the Trader: Through written notice, subject to fulfilling his obligations under this Agreement.
-
-7. REGULATORY COMPLIANCE
-
-7.1 This Agreement is governed by the laws of the UAE.
-7.2 Both parties agree to comply with applicable laws, including anti-money laundering and fraud regulations.
-
-8. REPRESENTATIONS AND WARRANTIES
-
-8.1 Investor's Representations:
-    • The Investor possesses the necessary funds and understands the risks associated with Forex and cryptocurrency trading.
-    • The Investor acknowledges that profits are not guaranteed.
-8.2 Trader's Representations:
-    • The Trader will execute trades professionally and diligently.
-    • The Trader will not request compensation beyond the agreed profit percentage.
-
-9. INDEMNIFICATION AND LIABILITY
-
-9.1 The Trader shall not be liable for losses arising from market fluctuations or unforeseen economic events.
-9.2 The Investor agrees to indemnify the Trader against any claim, liability, or damage arising from the Investor's breach of this Agreement.
-
-10. DISPUTE RESOLUTION
-
-10.1 Any dispute arising from this Agreement shall be resolved amicably.
-10.2 If unresolved, the dispute shall be submitted to arbitration under UAE law.
-10.3 The parties expressly and irrevocably agree to submit to the jurisdiction of the competent courts of the United Arab Emirates, city of Dubai, UAE, expressly waiving any other jurisdiction that may correspond to them due to their present or future domicile or the location of their assets.
-
-11. EXECUTION AND VALIDATION
-
-11.1 This Agreement enters into force once signed by both parties and validated by InteractiveBrokers.
-
-NOTICE: Withdrawal processing times are subject to various factors such as currency type, Investor's country, and banking institutions. Times are relative and subject to modification by the broker.
-
-SIGNATURES
-
-Trader:
-Name: Cristian Rolando Dorao
-Signature: ______________________
-Date: ${currentDate}
-
-Investor:
-Name: ${formData.fullName}
-Signature: ______________________
-Date: ${currentDate}
-
-This agreement was generated on ${currentDate} for ${formData.fullName} (Country: ${formData.country})
-    `.trim();
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleBankInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      bankDetails: {
-        ...prev.bankDetails,
-        [name]: value
+  const removeDocument = (documentType: 'identity' | 'proof_of_deposit') => {
+    setUploadedDocuments(prev => {
+      if (documentType === 'identity') {
+        return prev.filter(doc => doc.type !== 'id_card' && doc.type !== 'passport');
+      } else {
+        return prev.filter(doc => doc.type !== 'proof_of_deposit');
       }
-    }));
+    });
   };
 
-  const validateStep = () => {
-    setError('');
-    switch (currentStep) {
-      case 1: // Personal Information
-        if (!formData.fullName.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.country.trim() || !formData.city.trim()) {
-          setError('All personal information fields are required.');
-          return false;
-        }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-          setError('Please enter a valid email address.');
-          return false;
-        }
-        break;
-      case 2: // Bank Account Details
-        const countryBankReqs = bankingRequirements[formData.country];
-        if (!countryBankReqs) {
-          setError('Banking requirements not available for selected country.');
-          return false;
-        }
-        for (const field of countryBankReqs.fields) {
-          if (field.required && !formData.bankDetails[field.name]?.trim()) {
-            setError(`${field.label} is required.`);
-            return false;
-          }
-          if (field.pattern && formData.bankDetails[field.name] && !field.pattern.test(formData.bankDetails[field.name])) {
-            setError(`Invalid format for ${field.label}.`);
-            return false;
-          }
-        }
-        break;
-      case 3: // Identity Verification
-        if (!identityDocument.base64Data) {
-          setError('Please upload your identity document.');
-          return false;
-        }
-        break;
-      case 4: // Proof of Deposit
-        if (!proofOfDeposit.base64Data) {
-          setError('Please upload proof of deposit.');
-          return false;
-        }
-        break;
-      case 5: // Agreement
-        if (!agreementScrolled) {
-          setError('Please scroll to the end of the agreement to continue.');
-          return false;
-        }
-        if (!agreementAccepted) {
-          setError('You must agree to the terms and conditions to continue.');
-          return false;
-        }
-        break;
+  const getUploadedDocument = (documentType: 'identity' | 'proof_of_deposit') => {
+    if (documentType === 'identity') {
+      return uploadedDocuments.find(doc => doc.type === 'id_card' || doc.type === 'passport');
+    } else {
+      return uploadedDocuments.find(doc => doc.type === 'proof_of_deposit');
     }
-    return true;
+  };
+
+  const validateStep = (step: number): boolean => {
+    switch (step) {
+      case 1:
+        return !!(personalData.name && personalData.email && personalData.country && personalData.city);
+      case 2:
+        const deposit = parseFloat(financialData.initialDeposit);
+        return !!(financialData.initialDeposit && !isNaN(deposit) && deposit >= 1000);
+      case 3:
+        if (!bankData.selectedBank) return false;
+        if (!countryBankFields) return true;
+        return countryBankFields.fields.every((field: any) => 
+          !field.required || bankData.formData[field.name]?.trim()
+        );
+      case 4:
+        const identityDoc = getUploadedDocument('identity');
+        const depositDoc = getUploadedDocument('proof_of_deposit');
+        return !!(identityDoc && depositDoc);
+      case 5:
+        return agreementAccepted;
+      default:
+        return false;
+    }
   };
 
   const handleNext = () => {
-    if (validateStep()) {
-      setCurrentStep(prev => prev + 1);
+    if (validateStep(currentStep)) {
+      setCurrentStep(prev => Math.min(prev + 1, 5));
+      setError('');
+    } else {
+      setError('Please complete all required fields before continuing');
     }
   };
 
-  const handleBack = () => {
-    setCurrentStep(prev => prev - 1);
+  const handlePrevious = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+    setError('');
   };
 
   const handleSubmit = async () => {
-    if (!validateStep() || !user) return;
+    if (!user || !validateStep(5)) {
+      setError('Please complete all steps before submitting');
+      return;
+    }
 
     setIsLoading(true);
     setError('');
 
     try {
-      const requestData: Omit<AccountCreationRequest, 'id' | 'createdAt' | 'updatedAt'> = {
-        applicantName: formData.fullName,
-        applicantEmail: formData.email,
-        applicantPhone: formData.phone,
-        applicantCountry: formData.country,
-        applicantCity: formData.city,
+      console.log('🔄 Submitting account creation request...');
+
+      // Get uploaded documents
+      const identityDoc = getUploadedDocument('identity');
+      const depositDoc = getUploadedDocument('proof_of_deposit');
+
+      if (!identityDoc || !depositDoc) {
+        throw new Error('Required documents not found');
+      }
+
+      console.log('📄 Documents found:', {
+        identity: {
+          fileName: identityDoc.fileName,
+          fileType: identityDoc.fileType,
+          fileSize: identityDoc.fileSize,
+          url: identityDoc.url // Use 'url' field
+        },
+        deposit: {
+          fileName: depositDoc.fileName,
+          fileType: depositDoc.fileType,
+          fileSize: depositDoc.fileSize,
+          url: depositDoc.url // Use 'url' field
+        }
+      });
+
+      // Prepare bank details
+      const bankDetails = {
+        bankName: bankData.selectedBank,
+        accountHolderName: bankData.formData.accountHolderName || personalData.name,
+        ...bankData.formData,
+        currency: countryBankFields?.currency || 'USD',
+        country: personalData.country
+      };
+
+      // Create account creation request
+      const requestData = {
+        applicantName: personalData.name,
+        applicantEmail: personalData.email,
+        applicantPhone: personalData.phone,
+        applicantCountry: personalData.country,
+        applicantCity: personalData.city,
         requestedBy: user.id,
         requestedByName: user.name,
-        requestedAt: new Date(),
-        status: 'pending',
-        initialDeposit: parseFloat(formData.initialDeposit),
-        accountType: formData.accountType,
-        bankDetails: {
-          ...formData.bankDetails,
-          currency: bankingRequirements[formData.country]?.currency || 'USD',
-          country: formData.country
-        },
-        identityDocument: {
-          type: identityDocument.type,
-          fileName: identityDocument.file?.name || 'identity_document',
-          fileType: identityDocument.file?.type || 'image/jpeg',
-          fileSize: identityDocument.file?.size || 0,
-          base64Data: identityDocument.base64Data,
-          uploadedAt: new Date()
-        },
-        proofOfDeposit: {
-          fileName: proofOfDeposit.file?.name || 'proof_of_deposit',
-          fileType: proofOfDeposit.file?.type || 'image/jpeg',
-          fileSize: proofOfDeposit.file?.size || 0,
-          base64Data: proofOfDeposit.base64Data,
-          uploadedAt: new Date()
-        },
+        status: 'pending' as const,
+        initialDeposit: parseFloat(financialData.initialDeposit),
+        accountType: financialData.accountType,
+        bankDetails,
+        identityDocument: identityDoc,
+        proofOfDeposit: depositDoc,
         agreementAccepted: true,
         agreementAcceptedAt: new Date()
       };
 
-      await FirestoreService.addAccountCreationRequest(requestData);
+      console.log('📋 Account creation request data prepared:', {
+        applicantName: requestData.applicantName,
+        applicantCountry: requestData.applicantCountry,
+        initialDeposit: requestData.initialDeposit,
+        bankName: requestData.bankDetails.bankName,
+        hasIdentityDoc: !!requestData.identityDocument,
+        hasDepositDoc: !!requestData.proofOfDeposit,
+        identityDocSize: requestData.identityDocument.fileSize,
+        depositDocSize: requestData.proofOfDeposit.fileSize
+      });
+
+      // Submit to Firebase
+      const requestId = await FirestoreService.addAccountCreationRequest(requestData);
       
+      console.log('✅ Account creation request submitted:', requestId);
       setIsSuccess(true);
       
       if (onSuccess) {
@@ -500,8 +373,8 @@ This agreement was generated on ${currentDate} for ${formData.fullName} (Country
           onSuccess();
         }, 3000);
       }
-    } catch (err) {
-      console.error('Error submitting onboarding:', err);
+    } catch (error) {
+      console.error('❌ Error submitting account creation request:', error);
       setError('Failed to submit application. Please try again.');
     } finally {
       setIsLoading(false);
@@ -509,602 +382,726 @@ This agreement was generated on ${currentDate} for ${formData.fullName} (Country
   };
 
   const handleClose = () => {
-    setFormData({
-      fullName: '', email: '', phone: '', country: '', city: '',
-      initialDeposit: '', accountType: 'Standard', bankDetails: {}
-    });
-    setIdentityDocument({ type: 'id_card', file: null, base64Data: '' });
-    setProofOfDeposit({ file: null, base64Data: '' });
     setCurrentStep(1);
+    setPersonalData({ name: '', email: '', phone: '', country: 'Mexico', city: '' });
+    setFinancialData({ initialDeposit: '', accountType: 'Standard' });
+    setBankData({ selectedBank: '', formData: {} });
+    setVerificationData({ idType: 'id_card', depositMethod: 'bank_transfer', selectedCrypto: 'BTC' });
+    setUploadedDocuments([]);
+    setAgreementAccepted(false);
     setError('');
     setIsSuccess(false);
-    setAgreementScrolled(false);
-    setAgreementAccepted(false);
     onClose();
   };
 
-  const currentCountryBankingReqs = bankingRequirements[formData.country];
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2 uppercase tracking-wide">
+                PERSONAL INFORMATION
+              </h3>
+              <p className="text-gray-600 uppercase tracking-wide text-sm">
+                Please provide your personal details for account creation
+              </p>
+            </div>
 
-  if (isSuccess) {
-    return (
-      <Modal isOpen={isOpen} onClose={handleClose} title="APPLICATION SUBMITTED">
-        <div className="text-center py-12">
-          <div className="mb-8">
-            <img 
-              src="/Screenshot 2025-06-07 024813.png" 
-              alt="Interactive Brokers" 
-              className="h-16 w-auto object-contain mx-auto"
-              style={{ opacity: 0.4 }}
-            />
-          </div>
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={40} className="text-green-600" />
-          </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-4 uppercase tracking-wide">
-            APPLICATION SUBMITTED SUCCESSFULLY
-          </h3>
-          <p className="text-gray-700 mb-8 font-medium text-lg uppercase tracking-wide">
-            Your application has been sent to management for review and may take up to 48 hours to complete
-          </p>
-          <button
-            onClick={handleClose}
-            className="px-8 py-3 bg-gray-900 text-white font-bold hover:bg-gray-800 transition-colors rounded-lg uppercase tracking-wide"
-          >
-            CLOSE
-          </button>
-        </div>
-      </Modal>
-    );
-  }
-
-  return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="INVESTOR ONBOARDING" size="lg">
-      <div className="space-y-6">
-        {/* Progress Indicator */}
-        <div className="flex justify-between mb-8">
-          {Array.from({ length: totalSteps }).map((_, index) => (
-            <div key={index} className="flex flex-col items-center">
-              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white border-2 ${
-                currentStep > index ? 'bg-gray-900 border-gray-900' : 
-                currentStep === index + 1 ? 'bg-gray-600 border-gray-600' : 'bg-gray-300 border-gray-300'
-              }`}>
-                {currentStep > index ? <CheckCircle size={16} /> : index + 1}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  <User size={16} className="inline mr-1" />
+                  FULL NAME *
+                </label>
+                <input
+                  type="text"
+                  value={personalData.name}
+                  onChange={(e) => setPersonalData(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                  placeholder="Enter your full legal name"
+                  required
+                />
               </div>
-              <span className="text-xs mt-2 text-gray-600 font-medium uppercase tracking-wide">
-                {index === 0 && 'Personal'}
-                {index === 1 && 'Banking'}
-                {index === 2 && 'Identity'}
-                {index === 3 && 'Deposit'}
-                {index === 4 && 'Agreement'}
-                {index === 5 && 'Complete'}
-              </span>
-            </div>
-          ))}
-        </div>
 
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <AlertTriangle size={16} />
-              <span className="font-medium uppercase tracking-wide">{error}</span>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  <Mail size={16} className="inline mr-1" />
+                  EMAIL ADDRESS *
+                </label>
+                <input
+                  type="email"
+                  value={personalData.email}
+                  onChange={(e) => setPersonalData(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                  placeholder="Enter your email address"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  <Phone size={16} className="inline mr-1" />
+                  PHONE NUMBER
+                </label>
+                <input
+                  type="tel"
+                  value={personalData.phone}
+                  onChange={(e) => setPersonalData(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                  placeholder="Enter your phone number"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  <MapPin size={16} className="inline mr-1" />
+                  COUNTRY *
+                </label>
+                <select
+                  value={personalData.country}
+                  onChange={(e) => setPersonalData(prev => ({ ...prev, country: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                  required
+                >
+                  {Object.keys(banksByCountry).map(country => (
+                    <option key={country} value={country}>{country}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  CITY *
+                </label>
+                <input
+                  type="text"
+                  value={personalData.city}
+                  onChange={(e) => setPersonalData(prev => ({ ...prev, city: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                  placeholder="Enter your city"
+                  required
+                />
+              </div>
             </div>
           </div>
-        )}
+        );
 
-        {/* Step Content */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -50 }}
-            transition={{ duration: 0.3 }}
-          >
-            {/* Step 1: Personal Details */}
-            {currentStep === 1 && (
+      case 2:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2 uppercase tracking-wide">
+                FINANCIAL DETAILS
+              </h3>
+              <p className="text-gray-600 uppercase tracking-wide text-sm">
+                Set your initial investment amount and account preferences
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  <DollarSign size={16} className="inline mr-1" />
+                  INITIAL DEPOSIT (USD) *
+                </label>
+                <input
+                  type="number"
+                  value={financialData.initialDeposit}
+                  onChange={(e) => setFinancialData(prev => ({ ...prev, initialDeposit: e.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium text-lg"
+                  placeholder="Minimum $1,000"
+                  min="1000"
+                  step="100"
+                  required
+                />
+                <p className="text-xs text-gray-600 mt-1 uppercase tracking-wide">
+                  Minimum initial deposit: $1,000 USD
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                  ACCOUNT TYPE
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setFinancialData(prev => ({ ...prev, accountType: 'Standard' }))}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      financialData.accountType === 'Standard'
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <h4 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">STANDARD</h4>
+                    <p className="text-sm text-gray-600 uppercase tracking-wide">
+                      Standard trading features and support
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFinancialData(prev => ({ ...prev, accountType: 'Pro' }))}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      financialData.accountType === 'Pro'
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <h4 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">PRO</h4>
+                    <p className="text-sm text-gray-600 uppercase tracking-wide">
+                      Advanced features and priority support
+                    </p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2 uppercase tracking-wide">
+                BANKING INFORMATION
+              </h3>
+              <p className="text-gray-600 uppercase tracking-wide text-sm">
+                Provide your bank details for withdrawals in {personalData.country}
+              </p>
+            </div>
+
+            {availableBanks.length > 0 ? (
               <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                    <User size={20} className="mr-2" />
-                    INVESTOR PERSONAL DETAILS
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        FULL NAME *
-                      </label>
-                      <input
-                        type="text"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                        placeholder="Enter your full legal name"
-                        required
-                      />
-                    </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
+                    SELECT YOUR BANK *
+                  </label>
+                  <select
+                    value={bankData.selectedBank}
+                    onChange={(e) => setBankData(prev => ({ ...prev, selectedBank: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                    required
+                  >
+                    <option value="">Choose your bank...</option>
+                    {availableBanks.map((bank, index) => (
+                      <option key={index} value={bank}>{bank}</option>
+                    ))}
+                  </select>
+                </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        EMAIL ADDRESS *
-                      </label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                        placeholder="Enter your email address"
-                        required
-                      />
+                {bankData.selectedBank && countryBankFields && (
+                  <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                    <h4 className="font-medium text-gray-800 mb-4 uppercase tracking-wide">
+                      BANK ACCOUNT DETAILS FOR {bankData.selectedBank}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {countryBankFields.fields.map((field: any) => (
+                        <div key={field.name} className={field.name === 'address' ? 'md:col-span-2' : ''}>
+                          <label className="block text-sm font-medium text-gray-700 mb-1 uppercase tracking-wide">
+                            {field.label} {field.required && <span className="text-red-500">*</span>}
+                          </label>
+                          <input
+                            type={field.type}
+                            value={bankData.formData[field.name] || (field.name === 'accountHolderName' ? personalData.name : '')}
+                            onChange={(e) => setBankData(prev => ({
+                              ...prev,
+                              formData: { ...prev.formData, [field.name]: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
+                            placeholder={field.label}
+                            maxLength={field.maxLength}
+                            required={field.required}
+                          />
+                        </div>
+                      ))}
                     </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        PHONE NUMBER *
-                      </label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                        placeholder="Enter your phone number"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        COUNTRY OF RESIDENCE *
-                      </label>
-                      <select
-                        name="country"
-                        value={formData.country}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                        required
-                      >
-                        <option value="">Select your country</option>
-                        {countries.map(country => (
-                          <option key={country} value={country}>{country}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        CITY *
-                      </label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={formData.city}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                        placeholder="Enter your city"
-                        required
-                      />
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        INITIAL DEPOSIT (USD) *
-                      </label>
-                      <input
-                        type="number"
-                        name="initialDeposit"
-                        value={formData.initialDeposit}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                        placeholder="Minimum $1,000"
-                        min="1000"
-                        step="0.01"
-                        required
-                      />
-                      <p className="text-xs text-gray-600 mt-1 uppercase tracking-wide">
-                        Minimum initial deposit: $1,000
+                    <div className="mt-4 p-3 bg-white rounded border border-gray-300">
+                      <p className="text-gray-800 text-sm font-medium uppercase tracking-wide">
+                        <strong>Currency:</strong> Withdrawals will be converted to {countryBankFields.currency} at current exchange rates.
                       </p>
                     </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                        ACCOUNT TYPE
-                      </label>
-                      <select
-                        name="accountType"
-                        value={formData.accountType}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                      >
-                        <option value="Standard">Standard Account</option>
-                        <option value="Pro">Pro Account</option>
-                      </select>
-                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div className="flex items-start space-x-3">
+                  <AlertTriangle size={20} className="text-red-600 mt-0.5" />
+                  <div>
+                    <h4 className="text-red-800 font-semibold uppercase tracking-wide">
+                      BANKING NOT AVAILABLE
+                    </h4>
+                    <p className="text-red-700 text-sm mt-1 uppercase tracking-wide">
+                      Banking integration is not available for {personalData.country}. 
+                      Please contact support for alternative setup options.
+                    </p>
                   </div>
                 </div>
               </div>
             )}
+          </div>
+        );
 
-            {/* Step 2: Bank Account Details */}
-            {currentStep === 2 && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                    <Building size={20} className="mr-2" />
-                    BANK ACCOUNT DETAILS - {formData.country.toUpperCase()}
-                  </h3>
-                  
-                  {!currentCountryBankingReqs ? (
-                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                      <div className="flex items-center space-x-2">
-                        <AlertTriangle size={16} />
-                        <span className="uppercase tracking-wide">Banking requirements not available for {formData.country}. Please select a different country in Step 1.</span>
+      case 4:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2 uppercase tracking-wide">
+                IDENTITY VERIFICATION
+              </h3>
+              <p className="text-gray-600 uppercase tracking-wide text-sm">
+                Upload required documents for account verification
+              </p>
+            </div>
+
+            <div className="space-y-6">
+              {/* Identity Document Type Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3 uppercase tracking-wide">
+                  IDENTITY DOCUMENT TYPE *
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setVerificationData(prev => ({ ...prev, idType: 'id_card' }))}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      verificationData.idType === 'id_card'
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <Shield size={24} className="mx-auto mb-2 text-gray-600" />
+                    <h4 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">ID CARD</h4>
+                    <p className="text-xs text-gray-600 uppercase tracking-wide">National ID or Driver's License</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setVerificationData(prev => ({ ...prev, idType: 'passport' }))}
+                    className={`p-4 border-2 rounded-lg transition-all ${
+                      verificationData.idType === 'passport'
+                        ? 'border-gray-900 bg-gray-50'
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                  >
+                    <Globe size={24} className="mx-auto mb-2 text-gray-600" />
+                    <h4 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">PASSPORT</h4>
+                    <p className="text-xs text-gray-600 uppercase tracking-wide">International Passport</p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Identity Document Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3 uppercase tracking-wide">
+                  UPLOAD {verificationData.idType === 'id_card' ? 'ID CARD' : 'PASSPORT'} *
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  {getUploadedDocument('identity') ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between bg-gray-50 p-4 rounded border">
+                        <div className="flex items-center space-x-3">
+                          {getUploadedDocument('identity')?.fileType.startsWith('image/') ? (
+                            <div className="w-16 h-16 bg-gray-200 rounded border overflow-hidden">
+                              <img 
+                                src={getUploadedDocument('identity')?.url} // Use 'url' field
+                                alt="Identity Document"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <FileText size={32} className="text-blue-600" />
+                          )}
+                          <div>
+                            <p className="font-medium text-gray-900">{getUploadedDocument('identity')?.fileName}</p>
+                            <p className="text-sm text-gray-500">
+                              {(getUploadedDocument('identity')?.fileSize! / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getUploadedDocument('identity')?.fileType.startsWith('image/') && (
+                            <button
+                              onClick={() => {
+                                const doc = getUploadedDocument('identity');
+                                if (doc) {
+                                  // Create image preview modal
+                                  const modal = document.createElement('div');
+                                  modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
+                                  modal.onclick = () => document.body.removeChild(modal);
+                                  
+                                  modal.innerHTML = `
+                                    <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden" onclick="event.stopPropagation()">
+                                      <div class="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold text-gray-900">${doc.fileName}</h3>
+                                        <button onclick="document.body.removeChild(this.closest('.fixed'))" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                          <span class="text-gray-500 text-lg">×</span>
+                                        </button>
+                                      </div>
+                                      <div class="p-6 max-h-[80vh] overflow-auto">
+                                        <img src="${doc.url}" alt="${doc.fileName}" class="w-full h-auto max-w-full" style="max-height: 70vh" />
+                                      </div>
+                                    </div>
+                                  `;
+                                  
+                                  document.body.appendChild(modal);
+                                }
+                              }}
+                              className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Preview image"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => removeDocument('identity')}
+                            className="p-2 text-red-600 hover:text-red-800 transition-colors"
+                            title="Remove document"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
+                    <div className="text-center">
+                      <input
+                        ref={identityFileRef}
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileUpload(e, 'identity')}
+                        className="hidden"
+                      />
+                      <Camera size={48} className="mx-auto text-gray-400 mb-4" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2 uppercase tracking-wide">
+                        UPLOAD {verificationData.idType === 'id_card' ? 'ID CARD' : 'PASSPORT'}
+                      </h4>
+                      <p className="text-gray-600 mb-4 uppercase tracking-wide text-sm">
+                        Take a clear photo or upload a scan of your {verificationData.idType === 'id_card' ? 'ID card' : 'passport'}
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => identityFileRef.current?.click()}
+                        className="uppercase tracking-wide"
+                      >
+                        <Upload size={16} className="mr-2" />
+                        CHOOSE FILE
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-2 uppercase tracking-wide">
+                        Supported formats: JPG, PNG, PDF (Max 10MB)
+                      </p>
+                    </div>
+                  )}
+                </div>
+              
+              </div>
+
+              {/* Proof of Deposit Upload */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-3 uppercase tracking-wide">
+                  UPLOAD PROOF OF DEPOSIT *
+                </label>
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                  {getUploadedDocument('proof_of_deposit') ? (
                     <div className="space-y-4">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                        <p className="text-blue-800 text-sm font-medium uppercase tracking-wide">
-                          <strong>Currency:</strong> Withdrawals will be processed in {currentCountryBankingReqs.currency}
-                        </p>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentCountryBankingReqs.fields.map((field: any) => (
-                          <div key={field.name} className={field.name === 'address' ? 'md:col-span-2' : ''}>
-                            <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                              {field.label} {field.required && <span className="text-red-500">*</span>}
-                            </label>
-                            <input
-                              type={field.type}
-                              name={field.name}
-                              value={formData.bankDetails[field.name] || ''}
-                              onChange={handleBankInputChange}
-                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
-                              placeholder={field.label}
-                              maxLength={field.maxLength}
-                              required={field.required}
-                            />
-                            {field.pattern && (
-                              <p className="text-xs text-gray-500 mt-1 uppercase tracking-wide">
-                                {field.name === 'cbu' && 'Format: 22 digits'}
-                                {field.name === 'clabe' && 'Format: 18 digits'}
-                                {field.name === 'iban' && `Format: ${field.maxLength} characters max`}
-                              </p>
-                            )}
+                      <div className="flex items-center justify-between bg-gray-50 p-4 rounded border">
+                        <div className="flex items-center space-x-3">
+                          {getUploadedDocument('proof_of_deposit')?.fileType.startsWith('image/') ? (
+                            <div className="w-16 h-16 bg-gray-200 rounded border overflow-hidden">
+                              <img 
+                                src={getUploadedDocument('proof_of_deposit')?.url} // Use 'url' field
+                                alt="Proof of Deposit"
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <FileText size={32} className="text-blue-600" />
+                          )}
+                          <div>
+                            <p className="font-medium text-gray-900">{getUploadedDocument('proof_of_deposit')?.fileName}</p>
+                            <p className="text-sm text-gray-500">
+                              {(getUploadedDocument('proof_of_deposit')?.fileSize! / 1024 / 1024).toFixed(2)} MB
+                            </p>
                           </div>
-                        ))}
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          {getUploadedDocument('proof_of_deposit')?.fileType.startsWith('image/') && (
+                            <button
+                              onClick={() => {
+                                const doc = getUploadedDocument('proof_of_deposit');
+                                if (doc) {
+                                  // Create image preview modal
+                                  const modal = document.createElement('div');
+                                  modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
+                                  modal.onclick = () => document.body.removeChild(modal);
+                                  
+                                  modal.innerHTML = `
+                                    <div class="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden" onclick="event.stopPropagation()">
+                                      <div class="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">
+                                        <h3 class="text-lg font-semibold text-gray-900">${doc.fileName}</h3>
+                                        <button onclick="document.body.removeChild(this.closest('.fixed'))" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                          <span class="text-gray-500 text-lg">×</span>
+                                        </button>
+                                      </div>
+                                      <div class="p-6 max-h-[80vh] overflow-auto">
+                                        <img src="${doc.url}" alt="${doc.fileName}" class="w-full h-auto max-w-full" style="max-height: 70vh" />
+                                      </div>
+                                    </div>
+                                  `;
+                                  
+                                  document.body.appendChild(modal);
+                                }
+                              }}
+                              className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                              title="Preview image"
+                            >
+                              <Eye size={16} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => removeDocument('proof_of_deposit')}
+                            className="p-2 text-red-600 hover:text-red-800 transition-colors"
+                            title="Remove document"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
                       </div>
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <input
+                        ref={depositFileRef}
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={(e) => handleFileUpload(e, 'proof_of_deposit')}
+                        className="hidden"
+                      />
+                      <CreditCard size={48} className="mx-auto text-gray-400 mb-4" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2 uppercase tracking-wide">
+                        UPLOAD PROOF OF DEPOSIT
+                      </h4>
+                      <p className="text-gray-600 mb-4 uppercase tracking-wide text-sm">
+                        Upload a bank statement or screenshot showing your initial deposit
+                      </p>
+                      <Button
+                        variant="outline"
+                        onClick={() => depositFileRef.current?.click()}
+                        className="uppercase tracking-wide"
+                      >
+                        <Upload size={16} className="mr-2" />
+                        CHOOSE FILE
+                      </Button>
+                      <p className="text-xs text-gray-500 mt-2 uppercase tracking-wide">
+                        Supported formats: JPG, PNG, PDF (Max 10MB)
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
-            )}
+            </div>
+          </div>
+        );
 
-            {/* Step 3: Identity Verification */}
-            {currentStep === 3 && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                    <Shield size={20} className="mr-2" />
-                    IDENTITY VERIFICATION
-                  </h3>
-                  
-                  {/* Document Type Selection */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-3 uppercase tracking-wide">
-                      SELECT DOCUMENT TYPE
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <button
-                        type="button"
-                        onClick={() => setIdentityDocument(prev => ({ ...prev, type: 'id_card' }))}
-                        className={`p-4 border-2 rounded-lg transition-all ${
-                          identityDocument.type === 'id_card'
-                            ? 'border-gray-900 bg-gray-50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <IdCard size={20} className="text-gray-600" />
-                          <span className="font-medium text-gray-900 uppercase tracking-wide">ID CARD</span>
-                        </div>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIdentityDocument(prev => ({ ...prev, type: 'passport' }))}
-                        className={`p-4 border-2 rounded-lg transition-all ${
-                          identityDocument.type === 'passport'
-                            ? 'border-gray-900 bg-gray-50'
-                            : 'border-gray-300 hover:border-gray-400'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <FileText size={20} className="text-gray-600" />
-                          <span className="font-medium text-gray-900 uppercase tracking-wide">PASSPORT</span>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
+      case 5:
+        return (
+          <div className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-2 uppercase tracking-wide">
+                AGREEMENT & SUBMISSION
+              </h3>
+              <p className="text-gray-600 uppercase tracking-wide text-sm">
+                Review and accept the terms before submitting your application
+              </p>
+            </div>
 
-                  {/* File Upload */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                      UPLOAD {identityDocument.type === 'id_card' ? 'ID CARD' : 'PASSPORT'} *
-                    </label>
-                    <div className="border-2  border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={handleIdentityUpload}
-                        className="hidden"
-                        id="identity-upload"
-                        disabled={isUploading}
-                      />
-                      <label htmlFor="identity-upload" className="cursor-pointer">
-                        {identityDocument.base64Data ? (
-                          <div className="space-y-4">
-                            {identityDocument.file?.type.startsWith('image/') ? (
-                              <img
-                                src={identityDocument.base64Data}
-                                alt="Identity Document"
-                                className="max-h-48 mx-auto rounded-lg border border-gray-200"
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center space-x-2">
-                                <FileText size={24} className="text-gray-600" />
-                                <span className="text-gray-600 font-medium uppercase tracking-wide">
-                                  {identityDocument.file?.name}
-                                </span>
-                              </div>
-                            )}
-                            <p className="text-green-600 font-medium uppercase tracking-wide">
-                              ✓ DOCUMENT UPLOADED SUCCESSFULLY
-                            </p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              Click to replace document
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <Upload size={32} className="mx-auto text-gray-400" />
-                            <p className="text-gray-600 font-medium uppercase tracking-wide">
-                              {isUploading ? 'UPLOADING...' : 'CLICK TO UPLOAD DOCUMENT'}
-                            </p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              JPG, PNG, or PDF (Max 10MB)
-                            </p>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-                  </div>
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200 space-y-4">
+              <h4 className="font-bold text-gray-900 mb-3 uppercase tracking-wide">
+                APPLICATION SUMMARY
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Full Name</label>
+                  <p className="font-bold text-gray-900">{personalData.name}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Email</label>
+                  <p className="font-bold text-gray-900">{personalData.email}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Country</label>
+                  <p className="font-bold text-gray-900">{personalData.country}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Initial Deposit</label>
+                  <p className="font-bold text-gray-900">${parseFloat(financialData.initialDeposit).toLocaleString()}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Account Type</label>
+                  <p className="font-bold text-gray-900">{financialData.accountType}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Selected Bank</label>
+                  <p className="font-bold text-gray-900">{bankData.selectedBank}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Identity Document</label>
+                  <p className="font-bold text-gray-900">{getUploadedDocument('identity')?.fileName || 'N/A'}</p>
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Proof of Deposit</label>
+                  <p className="font-bold text-gray-900">{getUploadedDocument('proof_of_deposit')?.fileName || 'N/A'}</p>
                 </div>
               </div>
-            )}
+            </div>
 
-            {/* Step 4: Proof of Deposit */}
-            {currentStep === 4 && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                    <CreditCard size={20} className="mr-2" />
-                    ADCB BANK ACCOUNT DETAILS
-                  </h3>
-                  
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <p className="text-blue-800 text-sm font-medium uppercase tracking-wide mb-2">
-                      TRANSFER YOUR INITIAL DEPOSIT TO THE FOLLOWING ACCOUNT:
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">ACCOUNT HOLDER</label>
-                        <p className="font-bold text-gray-900">{adcbBankDetails.accountHolderName}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">BANK NAME</label>
-                        <p className="font-bold text-gray-900">{adcbBankDetails.bankName}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">BANK ADDRESS</label>
-                        <p className="font-bold text-gray-900">{adcbBankDetails.bankAddress}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">ACCOUNT NUMBER</label>
-                        <p className="font-bold text-gray-900 font-mono">{adcbBankDetails.accountNumber}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">IBAN</label>
-                        <p className="font-bold text-gray-900 font-mono">{adcbBankDetails.iban}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">SWIFT CODE</label>
-                        <p className="font-bold text-gray-900 font-mono">{adcbBankDetails.swiftCode}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">ROUTING CODE</label>
-                        <p className="font-bold text-gray-900 font-mono">{adcbBankDetails.routingCode}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">BRANCH CODE</label>
-                        <p className="font-bold text-gray-900 font-mono">{adcbBankDetails.branchCode}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                    <p className="text-yellow-800 text-sm font-medium uppercase tracking-wide">
-                      <strong>TRANSFER INSTRUCTIONS:</strong> {adcbBankDetails.additionalInstructions}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                    <Upload size={20} className="mr-2" />
-                    UPLOAD PROOF OF DEPOSIT
-                  </h3>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">
-                      PROOF OF DEPOSIT DOCUMENT *
-                    </label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*,.pdf"
-                        onChange={handleProofOfDepositUpload}
-                        className="hidden"
-                        id="deposit-upload"
-                        disabled={isUploading}
-                      />
-                      <label htmlFor="deposit-upload" className="cursor-pointer">
-                        {proofOfDeposit.base64Data ? (
-                          <div className="space-y-4">
-                            {proofOfDeposit.file?.type.startsWith('image/') ? (
-                              <img
-                                src={proofOfDeposit.base64Data}
-                                alt="Proof of Deposit"
-                                className="max-h-48 mx-auto rounded-lg border border-gray-200"
-                              />
-                            ) : (
-                              <div className="flex items-center justify-center space-x-2">
-                                <FileText size={24} className="text-gray-600" />
-                                <span className="text-gray-600 font-medium uppercase tracking-wide">
-                                  {proofOfDeposit.file?.name}
-                                </span>
-                              </div>
-                            )}
-                            <p className="text-green-600 font-medium uppercase tracking-wide">
-                              ✓ PROOF OF DEPOSIT UPLOADED SUCCESSFULLY
-                            </p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              Click to replace document
-                            </p>
-                          </div>
-                        ) : (
-                          <div className="space-y-2">
-                            <Upload size={32} className="mx-auto text-gray-400" />
-                            <p className="text-gray-600 font-medium uppercase tracking-wide">
-                              {isUploading ? 'UPLOADING...' : 'CLICK TO UPLOAD PROOF OF DEPOSIT'}
-                            </p>
-                            <p className="text-xs text-gray-500 uppercase tracking-wide">
-                              Bank receipt, transfer confirmation, or screenshot (JPG, PNG, PDF - Max 10MB)
-                            </p>
-                          </div>
-                        )}
-                      </label>
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <h4 className="font-bold text-gray-900 mb-3 uppercase tracking-wide">
+                TERMS AND CONDITIONS
+              </h4>
+              <div className="max-h-48 overflow-y-auto text-sm text-gray-700 border border-gray-300 p-4 rounded-lg">
+                <p className="mb-2">
+                  By submitting this application, I confirm that all information provided is true and accurate to the best of my knowledge. I understand that false information may lead to the rejection of my application or termination of my account.
+                </p>
+                <p className="mb-2">
+                  I agree to the Interactive Brokers LLC Client Agreement, Privacy Policy, and all other terms and conditions governing my account. I understand that trading involves substantial risk of loss and is not suitable for all investors.
+                </p>
+                <p className="mb-2">
+                  I authorize Interactive Brokers LLC to conduct any necessary background checks, identity verification, and financial assessments as required by law and internal policies.
+                </p>
+                <p className="mb-2">
+                  I acknowledge that my account will be subject to a 15% commission on all withdrawals, and that withdrawals may take 1-3 business days to process, or longer if additional verification is required.
+                </p>
+                <p className="mb-2">
+                  I understand that my account will be reviewed by a Governor for final approval, and that this process may take up to 7 business days.
+                </p>
               </div>
-            )}
+              <label className="flex items-center mt-4">
+                <input
+                  type="checkbox"
+                  checked={agreementAccepted}
+                  onChange={(e) => setAgreementAccepted(e.target.checked)}
+                  className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+                />
+                <span className="ml-2 text-sm font-medium text-gray-900 uppercase tracking-wide">
+                  I have read and agree to the terms and conditions *
+                </span>
+              </label>
+            </div>
+          </div>
+        );
 
-            {/* Step 5: Agreement */}
-            {currentStep === 5 && (
-              <div className="space-y-6">
-                <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide flex items-center">
-                    <Scroll size={20} className="mr-2" />
-                    INVESTMENT AGREEMENT
-                  </h3>
-                  
-                  <div 
-                    ref={agreementRef}
-                    onScroll={handleAgreementScroll}
-                    className="h-96 overflow-y-auto border border-gray-300 rounded-lg p-4 bg-white text-sm leading-relaxed"
-                  >
-                    <pre className="whitespace-pre-wrap font-mono text-xs">
-                      {generateAgreementContent()}
-                    </pre>
-                  </div>
+      default:
+        return null;
+    }
+  };
 
-                  <div className="mt-6 space-y-4">
-                    {!agreementScrolled && (
-                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-lg">
-                        <div className="flex items-center space-x-2">
-                          <AlertTriangle size={16} />
-                          <span className="font-medium uppercase tracking-wide">
-                            Please scroll to the end of the agreement to continue
-                          </span>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="flex items-start space-x-3">
-                      <input
-                        type="checkbox"
-                        id="agreement-checkbox"
-                        checked={agreementAccepted}
-                        onChange={(e) => setAgreementAccepted(e.target.checked)}
-                        disabled={!agreementScrolled}
-                        className="mt-1 h-4 w-4 text-gray-900 focus:ring-gray-300 border-gray-300 rounded disabled:opacity-50"
-                      />
-                      <label 
-                        htmlFor="agreement-checkbox" 
-                        className={`text-sm font-medium uppercase tracking-wide ${
-                          !agreementScrolled ? 'text-gray-400' : 'text-gray-900'
-                        }`}
-                      >
-                        By clicking you agree to all terms and conditions in the agreement
-                      </label>
-                    </div>
-                  </div>
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="INVESTOR ONBOARDING FLOW"
+      size="xl"
+    >
+      {!isSuccess ? (
+        <div className="space-y-6">
+          {/* Progress Bar */}
+          <div className="flex justify-between items-center mb-6">
+            {steps.map(step => (
+              <div key={step.id} className="flex flex-col items-center flex-1">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                  currentStep >= step.id
+                    ? 'bg-gray-900 border-gray-900 text-white'
+                    : 'bg-white border-gray-300 text-gray-500'
+                }`}>
+                  {step.icon}
                 </div>
+                <p className={`text-xs mt-2 text-center uppercase tracking-wide ${
+                  currentStep >= step.id ? 'font-bold text-gray-900' : 'text-gray-600'
+                }`}>
+                  {step.title}
+                </p>
               </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+            ))}
+          </div>
 
-        {/* Navigation Buttons */}
-        <div className="flex justify-between pt-6 border-t border-gray-200">
-          <Button
-            variant="outline"
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className="flex items-center space-x-2 uppercase tracking-wide"
-          >
-            <ArrowLeft size={16} />
-            <span>BACK</span>
-          </Button>
+          {/* Step Content */}
+          <div className="bg-white p-6 rounded-lg border border-gray-200">
+            {renderStepContent()}
+          </div>
 
-          {currentStep < totalSteps ? (
-            <Button
-              onClick={handleNext}
-              disabled={isLoading || isUploading}
-              className="flex items-center space-x-2 uppercase tracking-wide"
-            >
-              <span>NEXT</span>
-              <ArrowRight size={16} />
-            </Button>
-          ) : (
-            <Button
-              onClick={handleSubmit}
-              disabled={isLoading || !agreementAccepted || !agreementScrolled}
-              className="flex items-center space-x-2 uppercase tracking-wide"
-            >
-              {isLoading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  <span>SUBMITTING...</span>
-                </>
-              ) : (
-                <>
-                  <span>SUBMIT APPLICATION</span>
-                  <CheckCircle size={16} />
-                </>
-              )}
-            </Button>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <AlertTriangle size={16} />
+                <span className="font-medium uppercase tracking-wide">{error}</span>
+              </div>
+            </div>
           )}
+
+          {/* Navigation Buttons */}
+          <div className="flex justify-between">
+            <Button
+              variant="outline"
+              onClick={handlePrevious}
+              disabled={currentStep === 1 || isLoading}
+              className="uppercase tracking-wide"
+            >
+              PREVIOUS
+            </Button>
+            {currentStep < steps.length ? (
+              <Button
+                variant="primary"
+                onClick={handleNext}
+                disabled={isLoading || !validateStep(currentStep)}
+                className="uppercase tracking-wide"
+              >
+                NEXT
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                onClick={handleSubmit}
+                disabled={isLoading || !validateStep(currentStep)}
+                className="uppercase tracking-wide"
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    SUBMITTING...
+                  </div>
+                ) : (
+                  'SUBMIT APPLICATION'
+                )}
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="text-center py-8">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={40} className="text-green-600" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">
+            APPLICATION SUBMITTED SUCCESSFULLY
+          </h3>
+          <p className="text-gray-700 mb-6 font-medium uppercase tracking-wide">
+            Your account creation request has been submitted for Governor review.
+          </p>
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <p className="text-gray-800 text-sm font-medium uppercase tracking-wide">
+              <strong>NEXT STEPS:</strong> OUR GOVERNOR TEAM WILL REVIEW YOUR APPLICATION AND UPLOADED DOCUMENTS. 
+              YOU WILL RECEIVE A NOTIFICATION ONCE YOUR ACCOUNT IS APPROVED OR IF ADDITIONAL INFORMATION IS REQUIRED.
+            </p>
+          </div>
+          <Button
+            onClick={handleClose}
+            className="mt-6 uppercase tracking-wide"
+          >
+            CLOSE
+          </Button>
+        </div>
+      )}
     </Modal>
   );
 };

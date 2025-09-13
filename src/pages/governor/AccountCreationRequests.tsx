@@ -63,6 +63,9 @@ const AccountCreationRequests = () => {
   };
 
   const handleViewRequest = (request: AccountCreationRequest) => {
+    console.log('handleViewRequest: Selected Request:', request);
+    console.log('handleViewRequest: Identity Document URL:', request.identityDocument?.url);
+    console.log('handleViewRequest: Proof of Deposit URL:', request.proofOfDeposit?.url);
     setSelectedRequest(request);
     setShowReviewModal(true);
     setRejectionReason('');
@@ -468,6 +471,7 @@ const AccountCreationRequests = () => {
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">
                     Identity Document ({selectedRequest.identityDocument?.type?.replace('_', ' ').toUpperCase()})
                   </label>
+                  {console.log('Rendering Identity Document. URL:', selectedRequest.identityDocument?.url)}
                   {selectedRequest.identityDocument?.url ? (
                     <div className="space-y-2">
                       {selectedRequest.identityDocument.fileType.startsWith('image/') ? (
@@ -518,6 +522,7 @@ const AccountCreationRequests = () => {
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">
                     Proof of Deposit
                   </label>
+                  {console.log('Rendering Proof of Deposit. URL:', selectedRequest.proofOfDeposit?.url)}
                   {selectedRequest.proofOfDeposit?.url ? (
                     <div className="space-y-2">
                       {selectedRequest.proofOfDeposit.fileType.startsWith('image/') ? (

@@ -44,30 +44,82 @@ interface UploadedDocument {
 
 // Enhanced bank data for the 5 specified countries
 const banksByCountry: Record<string, string[]> = {
+  // North America
+  'United States': ['Bank of America', 'Chase Bank', 'Wells Fargo', 'Citibank', 'U.S. Bank', 'PNC Bank', 'TD Bank', 'Capital One', 'Truist', 'Goldman Sachs'],
+  'Canada': ['RBC Royal Bank', 'TD Canada Trust', 'Scotiabank', 'BMO Bank of Montreal', 'CIBC', 'National Bank of Canada'],
   'Mexico': [
     'Santander México', 'Banorte', 'BBVA México', 'Banamex (Citibanamex)', 'HSBC México',
     'Scotiabank México', 'Banco Azteca', 'Inbursa', 'Banco del Bajío', 'Banregio'
   ],
+  // South America
+  'Brazil': ['Itaú Unibanco', 'Bradesco', 'Banco do Brasil', 'Caixa Econômica Federal', 'Santander Brasil'],
+  'Argentina': ['Banco Nación', 'Banco Galicia', 'BBVA Argentina', 'Santander Argentina', 'Macro'],
+  'Colombia': ['Bancolombia', 'Banco de Bogotá', 'Davivienda', 'BBVA Colombia', 'Banco Popular'],
+  'Chile': ['Banco Santander Chile', 'Banco de Chile', 'BancoEstado', 'BCI', 'Scotiabank Chile'],
+  'Peru': ['Banco de Crédito del Perú (BCP)', 'BBVA Continental', 'Interbank', 'Scotiabank Perú', 'Banco Interamericano de Finanzas (BanBif)'],
+  // Europe
+  'Germany': ['Deutsche Bank', 'Commerzbank', 'KfW', 'DZ Bank', 'UniCredit Bank AG (HypoVereinsbank)'],
   'France': [
     'BNP Paribas', 'Crédit Agricole', 'Société Générale', 'Crédit Mutuel', 'BPCE (Banque Populaire)',
     'La Banque Postale', 'Crédit du Nord', 'HSBC France', 'ING Direct France', 'Boursorama Banque'
   ],
+  'United Kingdom': ['HSBC UK', 'Barclays', 'Lloyds Bank', 'NatWest', 'Santander UK', 'Standard Chartered'],
+  'Italy': ['UniCredit', 'Intesa Sanpaolo', 'Banco BPM', 'UBI Banca', 'Monte dei Paschi di Siena'],
+  'Spain': ['Banco Santander', 'BBVA', 'CaixaBank', 'Sabadell', 'Bankia'],
   'Switzerland': [
     'UBS', 'Credit Suisse', 'Julius Baer', 'Pictet', 'Lombard Odier',
     'Banque Cantonale Vaudois', 'Zürcher Kantonalbank', 'PostFinance', 'Raiffeisen Switzerland', 'Migros Bank'
+  ],
+  'Netherlands': ['ING Bank', 'Rabobank', 'ABN AMRO', 'SNS Bank', 'Triodos Bank'],
+  'Belgium': ['BNP Paribas Fortis', 'KBC Bank', 'Belfius', 'ING Belgium', 'Argenta'],
+  'Sweden': ['Nordea', 'SEB', 'Swedbank', 'Handelsbanken', 'Danske Bank Sweden'],
+  'Norway': ['DNB', 'Nordea Bank Abp', 'Danske Bank', 'SpareBank 1 SR-Bank', 'SpareBank 1 SMN'],
+  'Denmark': ['Danske Bank', 'Nordea Bank Abp', 'Jyske Bank', 'Sydbank', 'Nykredit Bank'],
+  'Finland': ['Nordea Bank Abp', 'OP Financial Group', 'Danske Bank', 'Aktia Bank', 'S-Pankki'],
+  'Austria': ['Raiffeisen Bank International', 'Erste Group Bank', 'UniCredit Bank Austria', 'BAWAG Group', 'Oberbank'],
+  'Poland': ['PKO Bank Polski', 'Bank Pekao', 'Santander Bank Polska', 'mBank', 'ING Bank Śląski'],
+  'Ireland': ['Bank of Ireland', 'AIB (Allied Irish Banks)', 'Ulster Bank', 'Permanent TSB', 'KBC Bank Ireland'],
+  'Portugal': ['Caixa Geral de Depósitos', 'Banco Comercial Português (BCP)', 'Novo Banco', 'Santander Totta', 'Banco BPI'],
+  'Greece': ['National Bank of Greece', 'Piraeus Bank', 'Eurobank Ergasias', 'Alpha Bank', 'Attica Bank'],
+  'Turkey': ['Türkiye İş Bankası', 'Ziraat Bankası', 'Garanti BBVA', 'Akbank', 'Yapı Kredi'],
+  // Asia
+  'China': ['Industrial and Commercial Bank of China (ICBC)', 'China Construction Bank (CCB)', 'Agricultural Bank of China (ABC)', 'Bank of China (BOC)', 'Bank of Communications (BOCOM)'],
+  'India': ['State Bank of India (SBI)', 'HDFC Bank', 'ICICI Bank', 'Axis Bank', 'Punjab National Bank'],
+  'Japan': ['Mitsubishi UFJ Financial Group (MUFG)', 'Sumitomo Mitsui Financial Group (SMFG)', 'Mizuho Financial Group', 'Japan Post Bank', 'Resona Holdings'],
+  'South Korea': ['KB Financial Group', 'Shinhan Financial Group', 'NongHyup Financial Group', 'Woori Financial Group', 'Hana Financial Group'],
+  'Indonesia': ['Bank Central Asia (BCA)', 'Bank Rakyat Indonesia (BRI)', 'Bank Mandiri', 'Bank Negara Indonesia (BNI)', 'Bank Danamon'],
+  'Thailand': ['Bangkok Bank', 'Krungthai Bank', 'Siam Commercial Bank (SCB)', 'Kasikornbank', 'Bank of Ayudhya (Krungsri)'],
+  'Vietnam': ['Vietcombank', 'BIDV', 'VietinBank', 'Agribank', 'MBBank'],
+  'Philippines': ['BDO Unibank', 'Metrobank', 'Bank of the Philippine Islands (BPI)', 'Land Bank of the Philippines', 'Philippine National Bank (PNB)'],
+  'Malaysia': ['Maybank', 'CIMB Group', 'Public Bank Berhad', 'RHB Bank', 'Hong Leong Bank'],
+  'Singapore': ['DBS Bank', 'OCBC Bank', 'United Overseas Bank (UOB)', 'Standard Chartered Singapore', 'Citibank Singapore'],
+  'United Arab Emirates': [
+    'Emirates NBD', 'First Abu Dhabi Bank (FAB)', 'Abu Dhabi Commercial Bank (ADCB)', 'Dubai Islamic Bank', 'Mashreq Bank',
+    'Commercial Bank of Dubai', 'Union National Bank', 'Ajman Bank', 'Bank of Sharjah', 'Fujairah National Bank'
   ],
   'Saudi Arabia': [
     'Saudi National Bank (SNB)', 'Al Rajhi Bank', 'Riyad Bank', 'Banque Saudi Fransi', 'Saudi British Bank (SABB)',
     'Arab National Bank', 'Bank AlJazira', 'Alinma Bank', 'Bank Albilad', 'Saudi Investment Bank'
   ],
-  'United Arab Emirates': [
-    'Emirates NBD', 'First Abu Dhabi Bank (FAB)', 'Abu Dhabi Commercial Bank (ADCB)', 'Dubai Islamic Bank', 'Mashreq Bank',
-    'Commercial Bank of Dubai', 'Union National Bank', 'Ajman Bank', 'Bank of Sharjah', 'Fujairah National Bank'
-  ]
+  'Qatar': ['Qatar National Bank (QNB)', 'Commercial Bank of Qatar', 'Doha Bank', 'Qatar Islamic Bank (QIB)', 'Ahli Bank'],
+  'Kuwait': ['National Bank of Kuwait (NBK)', 'Kuwait Finance House (KFH)', 'Commercial Bank of Kuwait (CBK)', 'Gulf Bank', 'Ahli United Bank Kuwait'],
+  'Bahrain': ['Ahli United Bank', 'National Bank of Bahrain (NBB)', 'BBK (Bank of Bahrain and Kuwait)', 'Al Baraka Banking Group', 'Bahrain Islamic Bank (BisB)'],
+  'Oman': ['Bank Muscat', 'National Bank of Oman (NBO)', 'Oman Arab Bank (OAB)', 'Bank Dhofar', 'Sohar International Bank']
 };
 
 // Bank form fields for each country
 const bankFormFields: Record<string, any> = {
+  // Generic fields for most countries
+  'default': {
+    fields: [
+      { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
+      { name: 'iban', label: 'IBAN/Account Number', type: 'text', required: true, maxLength: 34 },
+      { name: 'swiftCode', label: 'SWIFT/BIC Code', type: 'text', required: true, maxLength: 11 },
+      { name: 'bankAddress', label: 'Bank Address', type: 'text', required: false }
+    ],
+    currency: 'USD' // Default to USD, can be overridden
+  },
+  // Specific fields for certain countries
   'Mexico': {
     fields: [
       { name: 'accountHolderName', label: 'Account Holder Name', type: 'text', required: true },
@@ -128,7 +180,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
     name: '',
     email: '',
     phone: '',
-    country: 'Mexico',
+    country: 'United States', // Default to a common country
     city: ''
   });
 
@@ -164,8 +216,8 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
   ];
 
   // Get available banks and form fields for selected country
-  const availableBanks = banksByCountry[personalData.country] || [];
-  const countryBankFields = bankFormFields[personalData.country];
+  const availableBanks = banksByCountry[personalData.country] || banksByCountry['default'];
+  const countryBankFields = bankFormFields[personalData.country] || bankFormFields['default'];
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>, 
@@ -259,8 +311,9 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
         return !!(financialData.initialDeposit && !isNaN(deposit) && deposit >= 1000);
       case 3:
         if (!bankData.selectedBank) return false;
-        if (!countryBankFields) return true;
-        return countryBankFields.fields.every((field: any) => 
+        // Use the correct countryBankFields for validation
+        const currentCountryBankFields = bankFormFields[personalData.country] || bankFormFields['default'];
+        return currentCountryBankFields.fields.every((field: any) => 
           !field.required || bankData.formData[field.name]?.trim()
         );
       case 4:
@@ -328,7 +381,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
         bankName: bankData.selectedBank,
         accountHolderName: bankData.formData.accountHolderName || personalData.name,
         ...bankData.formData,
-        currency: countryBankFields?.currency || 'USD',
+        currency: (bankFormFields[personalData.country] || bankFormFields['default']).currency || 'USD', // Use correct currency
         country: personalData.country
       };
 
@@ -383,7 +436,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
 
   const handleClose = () => {
     setCurrentStep(1);
-    setPersonalData({ name: '', email: '', phone: '', country: 'Mexico', city: '' });
+    setPersonalData({ name: '', email: '', phone: '', country: 'United States', city: '' }); // Reset to default country
     setFinancialData({ initialDeposit: '', accountType: 'Standard' });
     setBankData({ selectedBank: '', formData: {} });
     setVerificationData({ idType: 'id_card', depositMethod: 'bank_transfer', selectedCrypto: 'BTC' });
@@ -464,7 +517,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-300 focus:border-gray-300 font-medium"
                   required
                 >
-                  {Object.keys(banksByCountry).map(country => (
+                  {Object.keys(banksByCountry).sort().map(country => (
                     <option key={country} value={country}>{country}</option>
                   ))}
                 </select>
@@ -672,7 +725,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
                     }`}
                   >
                     <Shield size={24} className="mx-auto mb-2 text-gray-600" />
-                    <h4 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">ID CARD</h4>
+                    <h4 className="font-bold text-gray-900 uppercase tracking-wide">ID CARD</h4>
                     <p className="text-xs text-gray-600 uppercase tracking-wide">National ID or Driver's License</p>
                   </button>
                   <button
@@ -685,7 +738,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
                     }`}
                   >
                     <Globe size={24} className="mx-auto mb-2 text-gray-600" />
-                    <h4 className="font-bold text-gray-900 mb-2 uppercase tracking-wide">PASSPORT</h4>
+                    <h4 className="font-bold text-gray-900 uppercase tracking-wide">PASSPORT</h4>
                     <p className="text-xs text-gray-600 uppercase tracking-wide">International Passport</p>
                   </button>
                 </div>
@@ -1090,7 +1143,7 @@ const InvestorOnboardingFlow = ({ isOpen, onClose, onSuccess }: InvestorOnboardi
           </p>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <p className="text-gray-800 text-sm font-medium uppercase tracking-wide">
-              <strong>NEXT STEPS:</strong> OUR MANAGEMENT TEAM WILL REVIEW YOUR APPLICATION AND UPLOADED DOCUMENTS. 
+              <strong>NEXT STEPS:</strong> OUR TEAM WILL REVIEW YOUR APPLICATION AND UPLOADED DOCUMENTS. 
               YOU WILL RECEIVE A NOTIFICATION ONCE YOUR ACCOUNT IS APPROVED OR IF ADDITIONAL INFORMATION IS REQUIRED.
             </p>
           </div>

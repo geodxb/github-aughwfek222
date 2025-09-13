@@ -16,7 +16,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Investor, Transaction, WithdrawalRequest, Commission, AuditLog, SystemSettings, UserRole } from '../types/user';
+import { Investor, Transaction, WithdrawalRequest, Commission, AuditLog, SystemSettings, UserRole, AccountCreationRequest } from '../types/user';
 import { NotificationService } from './notificationService';
 
 export class FirestoreService {
@@ -250,7 +250,6 @@ export class FirestoreService {
 
     console.log('🔄 Setting up real-time listener for transactions...', investorId ? `for investor ${investorId}` : 'all transactions');
     
-    // Always use investorId filter for security
     const transactionsQuery = query(
       collection(db, 'transactions'),
       where('investorId', '==', investorId),
@@ -864,7 +863,7 @@ export class FirestoreService {
   }
 
   // Get account creation requests
-  static async getAccountCreationRequests(): Promise<any[]> {
+  static async getAccountCreationRequests(): Promise<AccountCreationRequest[]> {
     try {
       console.log('🔥 Firebase: Fetching account creation requests...');
       const requestsQuery = query(
@@ -876,14 +875,31 @@ export class FirestoreService {
       
       const requests = querySnapshot.docs.map(doc => {
         const data = doc.data();
+
+        // Helper to map document data, handling both 'url' and 'base64Data'
+        const mapDocument = (docData: any) => {
+          if (!docData) return undefined;
+          return {
+            type: docData.type,
+            fileName: docData.fileName,
+            fileType: docData.fileType,
+            fileSize: docData.fileSize,
+            url: docData.url || docData.base64Data, // Prioritize 'url', fallback to 'base64Data'
+            uploadedAt: docData.uploadedAt?.toDate() || new Date()
+          };
+        };
+
         return {
           id: doc.id,
           ...data,
           requestedAt: data.requestedAt?.toDate() || new Date(),
           agreementAcceptedAt: data.agreementAcceptedAt?.toDate() || new Date(),
           reviewedAt: data.reviewedAt?.toDate() || null,
-          createdAt: data.createdAt?.toDate() || new Date()
-        };
+          createdAt: data.createdAt?.toDate() || new Date(),
+          // Map identityDocument and proofOfDeposit, handling old 'base64Data' field
+          identityDocument: mapDocument(data.identityDocument),
+          proofOfDeposit: mapDocument(data.proofOfDeposit),
+        } as AccountCreationRequest;
       });
       
       console.log(`✅ Firebase: Retrieved ${requests.length} account creation requests`);

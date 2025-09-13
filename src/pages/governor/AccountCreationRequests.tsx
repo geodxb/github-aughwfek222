@@ -20,7 +20,9 @@ import {
   Calendar,
   X,
   Check,
-  MessageSquare
+  MessageSquare,
+  Image as ImageIcon,
+  File as FileIcon
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { FirestoreService } from '../../services/firestoreService';
@@ -40,8 +42,8 @@ const AccountCreationRequests = () => {
   const [approvalConditions, setApprovalConditions] = useState<string[]>([]);
   const [newCondition, setNewCondition] = useState('');
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<{ src: string; title: string } | null>(null);
+  const [showFilePreviewModal, setShowFilePreviewModal] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{ url: string; fileName: string; fileType: string } | null>(null);
 
   useEffect(() => {
     loadRequests();
@@ -103,7 +105,7 @@ const AccountCreationRequests = () => {
     setError('');
 
     try {
-      await FirestoreService.updateDocument('accountCreationRequests', selectedRequest.id, {
+      await FirestoreService.updateAccountCreationRequest(selectedRequest.id, {
         status: 'rejected',
         rejectionReason: rejectionReason.trim(),
         reviewedBy: user?.name,
@@ -132,9 +134,9 @@ const AccountCreationRequests = () => {
     setApprovalConditions(approvalConditions.filter((_, i) => i !== index));
   };
 
-  const handleImageClick = (src: string, title: string) => {
-    setSelectedImage({ src, title });
-    setShowImageModal(true);
+  const handleFilePreview = (url: string, fileName: string, fileType: string) => {
+    setPreviewFile({ url, fileName, fileType });
+    setShowFilePreviewModal(true);
   };
 
   const getStatusColor = (status: string) => {
@@ -153,6 +155,15 @@ const AccountCreationRequests = () => {
       case 'rejected': return <XCircle size={16} />;
       default: return <Clock size={16} />;
     }
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) {
+      return <FileText size={16} className="text-red-600" />;
+    } else if (fileType.includes('image')) {
+      return <ImageIcon size={16} className="text-blue-600" />;
+    }
+    return <FileIcon size={16} className="text-gray-600" />;
   };
 
   const pendingRequests = requests.filter(r => r.status === 'pending');
@@ -457,23 +468,24 @@ const AccountCreationRequests = () => {
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">
                     Identity Document ({selectedRequest.identityDocument?.type?.replace('_', ' ').toUpperCase()})
                   </label>
-                  {selectedRequest.identityDocument?.base64Data ? (
+                  {selectedRequest.identityDocument?.url ? (
                     <div className="space-y-2">
                       {selectedRequest.identityDocument.fileType.startsWith('image/') ? (
                         <img
-                          src={selectedRequest.identityDocument.base64Data}
+                          src={selectedRequest.identityDocument.url}
                           alt="Identity Document"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => handleImageClick(
-                            selectedRequest.identityDocument.base64Data,
-                            `Identity Document - ${selectedRequest.applicantName}`
+                          onClick={() => handleFilePreview(
+                            selectedRequest.identityDocument!.url,
+                            selectedRequest.identityDocument!.fileName,
+                            selectedRequest.identityDocument!.fileType
                           )}
                         />
                       ) : (
                         <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
                           <div className="text-center">
-                            <FileText size={32} className="mx-auto text-gray-400 mb-2" />
-                            <p className="text-gray-600 font-medium uppercase tracking-wide">
+                            {getFileIcon(selectedRequest.identityDocument.fileType)}
+                            <p className="text-gray-600 font-medium uppercase tracking-wide mt-2">
                               {selectedRequest.identityDocument.fileName}
                             </p>
                           </div>
@@ -482,6 +494,19 @@ const AccountCreationRequests = () => {
                       <p className="text-xs text-gray-500 uppercase tracking-wide">
                         Size: {(selectedRequest.identityDocument.fileSize / 1024 / 1024).toFixed(2)} MB
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleFilePreview(
+                          selectedRequest.identityDocument!.url,
+                          selectedRequest.identityDocument!.fileName,
+                          selectedRequest.identityDocument!.fileType
+                        )}
+                        className="w-full uppercase tracking-wide"
+                      >
+                        <Eye size={16} className="mr-2" />
+                        VIEW DOCUMENT
+                      </Button>
                     </div>
                   ) : (
                     <p className="text-gray-500 uppercase tracking-wide">No document uploaded</p>
@@ -493,23 +518,24 @@ const AccountCreationRequests = () => {
                   <label className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2 block">
                     Proof of Deposit
                   </label>
-                  {selectedRequest.proofOfDeposit?.base64Data ? (
+                  {selectedRequest.proofOfDeposit?.url ? (
                     <div className="space-y-2">
                       {selectedRequest.proofOfDeposit.fileType.startsWith('image/') ? (
                         <img
-                          src={selectedRequest.proofOfDeposit.base64Data}
+                          src={selectedRequest.proofOfDeposit.url}
                           alt="Proof of Deposit"
                           className="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => handleImageClick(
-                            selectedRequest.proofOfDeposit.base64Data,
-                            `Proof of Deposit - ${selectedRequest.applicantName}`
+                          onClick={() => handleFilePreview(
+                            selectedRequest.proofOfDeposit!.url,
+                            selectedRequest.proofOfDeposit!.fileName,
+                            selectedRequest.proofOfDeposit!.fileType
                           )}
                         />
                       ) : (
                         <div className="w-full h-48 bg-gray-100 rounded-lg border border-gray-200 flex items-center justify-center">
                           <div className="text-center">
-                            <FileText size={32} className="mx-auto text-gray-400 mb-2" />
-                            <p className="text-gray-600 font-medium uppercase tracking-wide">
+                            {getFileIcon(selectedRequest.proofOfDeposit.fileType)}
+                            <p className="text-gray-600 font-medium uppercase tracking-wide mt-2">
                               {selectedRequest.proofOfDeposit.fileName}
                             </p>
                           </div>
@@ -518,6 +544,19 @@ const AccountCreationRequests = () => {
                       <p className="text-xs text-gray-500 uppercase tracking-wide">
                         Size: {(selectedRequest.proofOfDeposit.fileSize / 1024 / 1024).toFixed(2)} MB
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleFilePreview(
+                          selectedRequest.proofOfDeposit!.url,
+                          selectedRequest.proofOfDeposit!.fileName,
+                          selectedRequest.proofOfDeposit!.fileType
+                        )}
+                        className="w-full uppercase tracking-wide"
+                      >
+                        <Eye size={16} className="mr-2" />
+                        VIEW DOCUMENT
+                      </Button>
                     </div>
                   ) : (
                     <p className="text-gray-500 uppercase tracking-wide">No document uploaded</p>
@@ -675,7 +714,7 @@ const AccountCreationRequests = () => {
                   </div>
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase tracking-wide">Reviewed By</label>
-                    <p className="font-bold text-gray-900">{selectedRequest.reviewedBy}</p>
+                    <p className="font-bold text-gray-900">{selectedRequest.reviewedBy || 'N/A'}</p>
                   </div>
                 </div>
                 {selectedRequest.rejectionReason && (
@@ -700,80 +739,52 @@ const AccountCreationRequests = () => {
         </Modal>
       )}
 
-      {/* Image Modal */}
-      {showImageModal && selectedImage && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowImageModal(false)}>
-          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900 uppercase tracking-wide">{selectedImage.title}</h3>
-              <div className="flex items-center space-x-2">
-                <button
+      {/* Generic File Preview Modal */}
+      {showFilePreviewModal && previewFile && (
+        <Modal
+          isOpen={showFilePreviewModal}
+          onClose={() => setShowFilePreviewModal(false)}
+          title={previewFile.fileName}
+          size="xl"
+        >
+          <div className="p-6 max-h-[80vh] overflow-auto">
+            {previewFile.fileType.startsWith('image/') ? (
+              <img 
+                src={previewFile.url} 
+                alt={previewFile.fileName}
+                className="w-full h-auto max-w-full mx-auto"
+                style={{ maxHeight: '70vh' }}
+              />
+            ) : previewFile.fileType === 'application/pdf' ? (
+              <embed 
+                src={previewFile.url} 
+                type="application/pdf" 
+                width="100%" 
+                height="500px" 
+                className="rounded-lg border border-gray-300"
+              />
+            ) : (
+              <div className="text-center py-8 bg-gray-100 rounded-lg border border-gray-300">
+                <FileIcon size={48} className="mx-auto text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-800 mb-2">Cannot preview this file type</p>
+                <p className="text-sm text-gray-600">Please download the file to view it.</p>
+                <Button
+                  variant="primary"
                   onClick={() => {
                     const link = document.createElement('a');
-                    link.href = selectedImage.src;
-                    link.download = selectedImage.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+                    link.href = previewFile.url;
+                    link.download = previewFile.fileName;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                   }}
-                  className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                  title="Download image"
+                  className="mt-4 uppercase tracking-wide"
                 >
-                  <Download size={18} />
-                </button>
-                <button
-                  onClick={() => setShowImageModal(false)}
-                  className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
-                  title="Close preview"
-                >
-                  <X size={18} />
-                </button>
+                  <Download size={16} className="mr-2" />
+                  Download File
+                </Button>
               </div>
-            </div>
-            <div className="p-6 max-h-[80vh] overflow-auto">
-              <img 
-                src={selectedImage.src} 
-                alt={selectedImage.title}
-                className="w-full h-auto max-w-full"
-                style={{ maxHeight: '70vh' }}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  const parent = target.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `
-                      <div class="p-8 text-center text-gray-500 bg-gray-100 border border-gray-300 rounded">
-                        <div class="flex items-center justify-center mb-4">
-                          <div class="w-16 h-16 bg-gray-300 rounded flex items-center justify-center">
-                            <span class="text-gray-600 text-2xl">📄</span>
-                          </div>
-                        </div>
-                        <p class="text-lg font-medium text-gray-700 mb-2">Image could not be displayed</p>
-                        <p class="text-sm text-gray-500">${selectedImage.title}</p>
-                        <p class="text-xs text-gray-400 mt-2">The image data may be corrupted or in an unsupported format</p>
-                      </div>
-                    `;
-                  }
-                }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Legacy Modal (keeping for backward compatibility) */}
-      {false && showImageModal && selectedImage && (
-        <Modal
-          isOpen={showImageModal}
-          onClose={() => setShowImageModal(false)}
-          title={selectedImage.title}
-          size="xl"
-        >
-          <div className="text-center">
-            <img
-              src={selectedImage.src}
-              alt={selectedImage.title}
-              className="max-w-full max-h-[70vh] mx-auto rounded-lg border border-gray-200"
-            />
+            )}
           </div>
         </Modal>
       )}

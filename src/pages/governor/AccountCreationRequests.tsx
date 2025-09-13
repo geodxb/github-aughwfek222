@@ -702,6 +702,66 @@ const AccountCreationRequests = () => {
 
       {/* Image Modal */}
       {showImageModal && selectedImage && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowImageModal(false)}>
+          <div className="relative max-w-4xl max-h-[90vh] bg-white rounded-lg overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-gray-200 bg-white flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-gray-900 uppercase tracking-wide">{selectedImage.title}</h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = selectedImage.src;
+                    link.download = selectedImage.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  title="Download image"
+                >
+                  <Download size={18} />
+                </button>
+                <button
+                  onClick={() => setShowImageModal(false)}
+                  className="p-2 text-gray-600 hover:text-gray-800 transition-colors"
+                  title="Close preview"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="p-6 max-h-[80vh] overflow-auto">
+              <img 
+                src={selectedImage.src} 
+                alt={selectedImage.title}
+                className="w-full h-auto max-w-full"
+                style={{ maxHeight: '70vh' }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  const parent = target.parentElement;
+                  if (parent) {
+                    parent.innerHTML = `
+                      <div class="p-8 text-center text-gray-500 bg-gray-100 border border-gray-300 rounded">
+                        <div class="flex items-center justify-center mb-4">
+                          <div class="w-16 h-16 bg-gray-300 rounded flex items-center justify-center">
+                            <span class="text-gray-600 text-2xl">📄</span>
+                          </div>
+                        </div>
+                        <p class="text-lg font-medium text-gray-700 mb-2">Image could not be displayed</p>
+                        <p class="text-sm text-gray-500">${selectedImage.title}</p>
+                        <p class="text-xs text-gray-400 mt-2">The image data may be corrupted or in an unsupported format</p>
+                      </div>
+                    `;
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy Modal (keeping for backward compatibility) */}
+      {false && showImageModal && selectedImage && (
         <Modal
           isOpen={showImageModal}
           onClose={() => setShowImageModal(false)}

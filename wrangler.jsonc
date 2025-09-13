@@ -1,5 +1,5 @@
 {
-  "name": "trading-affiliate-dashboard",
+  "name": "affiliate-desk2",
   "compatibility_date": "2025-01-08",
   "build": {
     "command": "npm run build"
